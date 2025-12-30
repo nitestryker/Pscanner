@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: transparent;
+    overflow: hidden; /* hide page scrollbars */
+  }
+
+  #log {
+    height: 100%;
+    overflow-y: scroll;     /* scrolling still works */
+    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none; /* IE / old Edge */
+
+    white-space: pre-wrap;
+    font-family: Arial, sans-serif;
+    font-size: 28px;
+    line-height: 1.2;
+    color: white;
+    padding: 16px;
+    box-sizing: border-box;
+    text-shadow: 0 2px 6px rgba(0,0,0,.8);
+  }
+
+  /* Chrome / OBS (Chromium) */
+  #log::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+  
+</style>
+
+</head>
+<body>
+  <div id="log">Loading…</div>
+
+  <script>
+    // Point this to your txt file (same folder is easiest)
+    const TXT_URL = "full_transcript_log.txt";
+    const POLL_MS = 300;          // how often to check for updates
+    const MAX_CHARS = 20000;      // keep it light for OBS
+
+    const el = document.getElementById("log");
+    let lastText = "";
+
+    function scrollToBottom() {
+      el.scrollTop = el.scrollHeight;
+    }
+
+    async function tick() {
+      try {
+        // cache-bust so OBS/Chromium doesn't serve old content
+        const res = await fetch(TXT_URL + "?t=" + Date.now(), { cache: "no-store" });
+        const text = await res.text();
+
+        if (text !== lastText) {
+          lastText = text;
+
+          // optional: keep only the tail so it stays fast
+          const tail = text.length > MAX_CHARS ? text.slice(-MAX_CHARS) : text;
+          el.textContent = tail;
+
+          // scroll after DOM updates
+          requestAnimationFrame(scrollToBottom);
+        }
+      } catch (e) {
+        el.textContent = "Error loading log.txt";
+      }
+    }
+
+    setInterval(tick, POLL_MS);
+    tick();
+  </script>
+</body>
+</html>
